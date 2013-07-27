@@ -317,6 +317,8 @@ class SphericalProjAxes(axes.Axes):
         vec = R.dir2vec(theta,phi,lonlat=lonlat)
         vec = (R.Rotator(rot=rot,coord=coord,eulertype='Y')).I(vec)
         x,y = self.proj.vec2xy(vec,direct=kwds.pop('direct',False))
+        if kwds.pop("return_projected_points", False):
+            return x, y
         s = self.scatter(x, y, *args, **kwds)
         if save_input_data:
             if not hasattr(self, '_scatter_data'):
