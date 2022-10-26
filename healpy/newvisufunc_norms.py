@@ -1,0 +1,166 @@
+import numpy as np
+from matplotlib.colors import Normalize
+
+
+class DummyNorm(Normalize):
+    """A template to generate a new Matplotlib Norm transformation
+    Basically you only need to derive this class and set the
+    `_transform` and `_inverse_transform` methods.
+    """
+
+    def _transform(self, value, out=None):
+        delta = self.vmax - self.vmin
+        return (value - self.vmin) / float(delta)
+
+    def _inverse_transform(self, value, out=None):
+        delta = self.vmax - self.vmin
+        return delta * value + self.vmin
+
+    def __call__(self, value, clip=None):
+        if clip is None:
+            clip = self.clip
+
+        # Normalize initial recipe to clean inputs
+        if clip:
+            result, is_scalar = self.process_value(np.clip(value), self.vmin, self.vmax)
+        else:
+            result, is_scalar = self.process_value(value)
+
+        resdat = result.data
+        resdat = self._transform(resdat)
+        result = np.ma.array(resdat, mask=result.mask, copy=False)
+        if is_scalar:
+            return result[0]
+        return result
+
+    def inverse(self, value):
+        result, is_scalar = self.process_value(value)
+        resdat = result.data
+        resdat = self._inverse_transform(resdat)
+        result = np.ma.array(resdat, mask=result.mask, copy=False)
+        if is_scalar:
+            return result[0]
+        return result
+
+
+class HistEq(DummyNorm):
+    """
+    Histogram equalizer normalization
+    Attributes
+    ----------
+    artist: Artist instance or ndarray
+        artist or image to normalize
+    bins: int, optional
+        number of bins to calculate the histogram
+    """
+
+    def __init__(self, artist, *args, **kwargs):
+        bins = kwargs.pop("bins", 1024)
+        super().__init__(*args, **kwargs)
+        try:
+            image = artist._A
+        except AttributeError:
+            image = artist
+        values, bins = np.histogram(image.ravel(), bins=bins)
+        centers = 0.5 * (bins[:-1] + bins[1:])
+        csum = values.cumsum()
+        self.histogram = centers, csum / csum[-1], values
+
+    def _transform(self, value, out=None):
+        return np.interp(value, self.histogram[0], self.histogram[1])
+
+    def _inverse_transform(self, value, out=None):
+        return np.interp(value, self.histogram[1], self.histogram[0])
+
+
+class Arcsinh(DummyNorm):
+    """Arcsinh normalization"""
+
+    def _transform(self, value, out=None):
+        delta = np.arcsinh(self.vmax) - np.arcsinh(self.vmin)
+        return (np.arcsinh(value) - np.arcsinh(self.vmin)) / float(delta)
+
+    def _inverse_transform(self, value, out=None):
+        delta = np.arcsinh(self.vmax) - np.arcsinh(self.vmin)
+        return np.sinh(delta * value + np.arcsinh(self.vmin))
+
+
+class MidpointNormalize(Normalize):
+    """Normalize to a central point"""
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
+
+
+class Sqrt(DummyNorm):
+    """Sqrt normalization"""
+
+    def _transform(self, value, out=None):
+        delta = np.sqrt(self.vmax) - np.sqrt(self.vmin)
+        return (np.sqrt(value) - np.sqrt(self.vmin)) / float(delta)
+
+    def _inverse_transform(self, value, out=None):
+        delta = np.power(self.vmax, 2) - np.power(self.vmin, 2)
+        return np.power(delta * value + np.power(self.vmin, 2))
+
+
+class Power(DummyNorm):
+    """Power normalization"""
+
+    def __init__(self, power_value=2, vmin=None, vmax=None, clip=False):
+        self.power_ = power_value
+        self.inv_power_ = 1.0 / power_value
+        Normalize.__init__(self, vmin, vmax, clip)
+
+    def _transform(self, value, out=None):
+        delta = np.power(self.vmax, self.power_) - np.power(self.vmin, self.power_)
+        return (
+            np.power(value, self.power_) - np.power(self.vmin, self.power_)
+        ) / float(delta)
+
+    def _inverse_transform(self, value, out=None):
+        delta = np.power(self.vmax, self.inv_power_) - np.power(
+            self.vmin, self.inv_power_
+        )
+        return np.power(delta * value + np.power(self.vmin, self.inv_power_))
+
+
+def parse_norm(norm, data=None, **kwargs):
+    """Allows one to use a string shortcut to defined the norm keyword
+    e.g.: parse_norm('log10')
+    Parameters
+    ----------
+    kwargs: dict
+        keywords given to the artist
+    Returns
+    -------
+    norm: Normalize object
+    """
+
+    mapped = {
+        "arcsinh": Arcsinh,
+        "log": colors.LogNorm,
+        "log10": colors.LogNorm,
+        "sqrt": Sqrt,
+        "pow": Power,
+        "histeq": HistEq,
+        "midpoint": MidpointNormalize,
+    }
+    if norm in (None, "None", "none", ""):
+        return Normalize(**kwargs)
+    try:
+        norm_ = eval(norm, mapped, colors.__dict__)
+        if isinstance(norm_, type):
+            if norm_ == HistEq:
+                return norm_(data, **kwargs)
+            return norm_(**kwargs)
+        return norm_
+    except Exception:
+        return norm
