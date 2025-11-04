@@ -25,6 +25,7 @@ import numpy as np
 import astropy.io.fits as pf
 from .utils.deprecation import deprecated_renamed_argument
 from astropy.utils import data
+from urllib.error import URLError
 
 DATAURL = "https://healpy.github.io/healpy-data/"
 DATAURL_MIRROR = "https://github.com/healpy/healpy-data/releases/download/"
@@ -1179,9 +1180,16 @@ def pixwin(nside, pol=False, lmax=None, datapath=None):
         # Use astropy to download/cache the file
         with (
             data.conf.set_temp("dataurl", DATAURL),
+            data.conf.set_temp("dataurl_mirror", DATAURL_MIRROR),
             data.conf.set_temp("remote_timeout", 30),
         ):
-            fname = data.get_pkg_data_filename(filename, package="healpy")
+            try:
+                fname = data.get_pkg_data_filename(filename, package="healpy")
+            except (FileNotFoundError, OSError, URLError) as exc:
+                raise ValueError(
+                    f"Pixel window file for nside {nside} is not available remotely. "
+                    "Download it manually or point `datapath` to a local copy."
+                ) from exc
 
     pw = pf.getdata(fname)
     pw_temp, pw_pol = pw.field(0), pw.field(1)
