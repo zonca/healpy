@@ -2,7 +2,7 @@ import numpy as np
 cimport numpy as np
 cimport cython
 from _common cimport RING, Healpix_Map, ndarray2map
-from pixelfunc import npix2nside
+from .pixelfunc import npix2nside
 from healpy.sphtfunc import alm2map, Alm
 
 cdef extern from "alice3.h":

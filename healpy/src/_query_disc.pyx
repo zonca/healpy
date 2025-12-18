@@ -7,7 +7,7 @@ from libcpp.vector cimport vector
 cimport cython
 
 from _common cimport int64, pointing, rangeset, vec3, Healpix_Ordering_Scheme, RING, NEST, SET_NSIDE, T_Healpix_Base
-from _pixelfunc import isnsideok
+from ._pixelfunc import isnsideok
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -344,6 +344,5 @@ cdef pixset_to_array(rangeset[int64] &pixset, buff=None):
             ipix[ii] = ip
             ii += 1
     return ipix
-
 
 
