@@ -203,7 +203,10 @@ class build_external_clib(build_clib):
             log.info("%s", " ".join(cmd))
             check_call(cmd, cwd=build_temp, env=env)
 
-            build_args = self.pkgconfig(pkg_config_name)
+            try:
+                build_args = self.pkgconfig(pkg_config_name)
+            except CalledProcessError:
+                build_args = self._pkgconfig_from_pc(build_clib, pkg_config_name)
 
         return build_args
         # Done!
@@ -249,6 +252,82 @@ class build_external_clib(build_clib):
                                 os.path.join(dirpath, filename),
                                 os.path.join(dest_dirpath, filename),
                             )
+
+    def _pkgconfig_from_pc(self, build_clib, pkg_config_name):
+        """Parse a generated .pc file to build compiler/linker arguments."""
+        pkg_name = pkg_config_name.split()[0]
+        search_dirs = [
+            os.path.join(build_clib, "lib64", "pkgconfig"),
+            os.path.join(build_clib, "lib", "pkgconfig"),
+        ]
+        pc_path = None
+        for directory in search_dirs:
+            candidate = os.path.join(directory, f"{pkg_name}.pc")
+            if os.path.exists(candidate):
+                pc_path = candidate
+                break
+        if pc_path is None:
+            raise DistutilsExecError(
+                f"Unable to locate pkg-config file for {pkg_name} in {search_dirs}"
+            )
+
+        variables = {}
+        fields = {}
+        with open(pc_path, encoding="utf-8") as pc_file:
+            for line in pc_file:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line and ":" not in line.split("=", 1)[0]:
+                    key, value = line.split("=", 1)
+                    variables[key.strip()] = value.strip()
+                elif ":" in line:
+                    key, value = line.split(":", 1)
+                    fields[key.strip()] = value.strip()
+
+        def expand(value):
+            for key, repl in variables.items():
+                value = value.replace("${" + key + "}", repl)
+            return value
+
+        include_dirs = []
+        extra_compile_args = []
+        for token in shlex.split(expand(fields.get("Cflags", ""))):
+            if token.startswith("-I"):
+                include_dirs.append(token[2:])
+            else:
+                extra_compile_args.append(token)
+
+        library_dirs = []
+        runtime_library_dirs = []
+        libraries = []
+        extra_link_args = []
+        for token in shlex.split(
+            expand(fields.get("Libs", "") + " " + fields.get("Libs.private", ""))
+        ):
+            if token.startswith("-L"):
+                directory = token[2:]
+                library_dirs.append(directory)
+                runtime_library_dirs.append(directory)
+            elif token.startswith("-l"):
+                libraries.append(token[2:])
+            else:
+                extra_link_args.append(token)
+
+        args = {}
+        if include_dirs:
+            args["include_dirs"] = include_dirs
+        if extra_compile_args:
+            args["extra_compile_args"] = extra_compile_args
+        if library_dirs:
+            args["library_dirs"] = library_dirs
+        if runtime_library_dirs:
+            args["runtime_library_dirs"] = runtime_library_dirs
+        if libraries:
+            args["libraries"] = libraries
+        if extra_link_args:
+            args.setdefault("extra_link_args", []).extend(extra_link_args)
+        return args
 
     def get_source_files(self):
         """Copied from Distutils' own build_clib, but modified so that it is not

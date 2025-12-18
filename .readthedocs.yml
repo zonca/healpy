@@ -4,13 +4,6 @@ build:
    os: ubuntu-22.04
    tools:
       python: "3.11"
-   apt_packages:
-      - pkg-config
-      - automake
-      - libtool
-      - libcfitsio-dev
-      - libsharp-dev
-      - libhealpix-cxx-dev
 
 python:
    install:
