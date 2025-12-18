@@ -1,5 +1,11 @@
+import shutil
+from pathlib import Path
+
 import pytest
-import requests
+from astropy.utils import data
+
+DATAURL = "https://healpy.github.io/healpy-data/"
+DATAURL_MIRROR = "https://github.com/healpy/healpy-data/releases/download/"
 
 
 def test_pixwin_download(monkeypatch):
@@ -17,30 +23,21 @@ def test_pixwin_download(monkeypatch):
 def test_pixwin_local_datapath(tmp_path):
     """Test that pixwin loads the file from a local datapath if provided."""
     import healpy as hp
-    import time
 
     nside = 32
     datapath = tmp_path / "pixel_window_functions"
     datapath.mkdir(parents=True)
-    # Download the file from healpy-data repo
-    url = (
-        "https://github.com/healpy/healpy-data/"
-        "raw/master/pixel_window_functions/"
-        f"pixel_window_n{nside:04d}.fits"
-    )
-    for i in range(3):
-        try:
-            r = requests.get(url)
-            r.raise_for_status()  # Raise an exception for bad status codes
-            break
-        except requests.exceptions.RequestException as e:
-            if i < 2:
-                time.sleep(5)
-            else:
-                raise e
-    local_file = datapath / f"pixel_window_n{nside:04d}.fits"
-    with open(local_file, "wb") as f:
-        f.write(r.content)
+    filename = f"pixel_window_functions/pixel_window_n{nside:04d}.fits"
+    try:
+        with data.conf.set_temp("dataurl", DATAURL), data.conf.set_temp(
+            "dataurl_mirror", DATAURL_MIRROR
+        ), data.conf.set_temp("remote_timeout", 30):
+            remote_file = data.get_pkg_data_filename(filename, package="healpy")
+    except OSError as err:
+        pytest.skip(f"Cannot retrieve pixel window test data: {err}")
+
+    local_file = datapath / Path(filename).name
+    shutil.copy(remote_file, local_file)
     pw = hp.pixwin(nside, datapath=tmp_path)
     assert pw is not None
     assert len(pw) == 3 * nside - 1 + 1

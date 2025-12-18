@@ -34,6 +34,7 @@ from . import _healpy_sph_transform_lib as sphtlib
 from . import _sphtools as _sphtools
 from . import cookbook as cb
 
+import os
 import os.path
 from . import pixelfunc
 
@@ -1130,7 +1131,7 @@ def smoothing(
     return output_map
 
 
-def pixwin(nside, pol=False, lmax=None):
+def pixwin(nside, pol=False, lmax=None, datapath=None):
     """Return the pixel window function for the given nside.
 
     Parameters
@@ -1141,6 +1142,11 @@ def pixwin(nside, pol=False, lmax=None):
       If True, return also the polar pixel window. Default: False
     lmax : int, optional
         Maximum l of the power spectrum (default: 3*nside-1)
+    datapath : str or path-like, optional
+        Base directory containing the ``pixel_window_functions`` folder from the
+        ``healpy-data`` repository. If not provided, the packaged data is
+        checked first and otherwise the file is downloaded via Astropy's data
+        helpers.
 
     Returns
     -------
@@ -1152,12 +1158,34 @@ def pixwin(nside, pol=False, lmax=None):
     if lmax is None:
         lmax = 3 * nside - 1
 
-    datapath = DATAPATH
     if not pixelfunc.isnsideok(nside):
         raise ValueError("Wrong nside value (must be a power of two).")
-    fname = os.path.join(datapath, "pixel_window_n%04d.fits" % nside)
-    if not os.path.isfile(fname):
-        raise ValueError("No pixel window for this nside " "or data files missing")
+    filename = f"pixel_window_functions/pixel_window_n{nside:04d}.fits"
+    fname = None
+    if datapath is not None:
+        datapath = os.fspath(datapath)
+        candidate = os.path.join(datapath, filename)
+        if os.path.exists(candidate):
+            fname = candidate
+        else:
+            raise ValueError(
+                "You specified datapath but pixel window file is missing at "
+                f"{candidate}"
+            )
+    if fname is None:
+        packaged = os.path.join(DATAPATH, os.path.basename(filename))
+        if os.path.isfile(packaged):
+            fname = packaged
+    if fname is None:
+        with data.conf.set_temp("dataurl", DATAURL), data.conf.set_temp(
+            "dataurl_mirror", DATAURL_MIRROR
+        ), data.conf.set_temp("remote_timeout", 30):
+            try:
+                fname = data.get_pkg_data_filename(filename, package="healpy")
+            except OSError as err:
+                raise ValueError(
+                    "No pixel window for this nside or data files missing"
+                ) from err
     # return hfitslib._pixwin(nside,datapath,pol)  ## BROKEN -> seg fault...
     pw = pf.getdata(fname)
     pw_temp, pw_pol = pw.field(0), pw.field(1)
