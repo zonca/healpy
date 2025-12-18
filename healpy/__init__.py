@@ -87,8 +87,8 @@ from .sphtfunc import (
     blm_gauss
 )
 
-from ._query_disc import query_disc, query_strip, query_polygon, boundaries
 from ._pixelfunc import ringinfo, pix2ring
+from ._query_disc import query_disc, query_strip, query_polygon, boundaries
 
 from ._sphtools import rotate_alm
 from .rotator import Rotator, vec2dir, dir2vec
