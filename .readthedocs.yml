@@ -8,6 +8,7 @@ build:
       - pkg-config
       - automake
       - libtool
+      - gfortran
 
 python:
    install:
