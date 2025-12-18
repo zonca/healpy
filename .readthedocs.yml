@@ -5,6 +5,10 @@ conda:
 
 build:
    image: latest
+   apt_packages:
+      - libcfitsio-dev
+      - libsharp-dev
+      - libhealpix-cxx-dev
 
 python:
    version: 3.7
