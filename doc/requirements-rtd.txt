@@ -1,0 +1,12 @@
+astropy
+numpy
+ipykernel
+cython
+matplotlib
+pytest
+scipy
+requests
+numpydoc
+nbsphinx
+sphinx
+sphinx_rtd_theme
