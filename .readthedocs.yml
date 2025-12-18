@@ -9,6 +9,9 @@ build:
       - automake
       - libtool
       - gfortran
+      - libcfitsio-dev
+      - libsharp-dev
+      - libhealpix-cxx-dev
 
 python:
    install:
