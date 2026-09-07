@@ -1,16 +1,28 @@
 version: 2
 
-conda:
-    environment: doc/environment.yml
+sphinx:
+  configuration: doc/conf.py
 
 build:
-   image: latest
+  os: ubuntu-24.04
+  apt_packages:
+    - autoconf
+    - automake
+    - gfortran
+    - libcfitsio-dev
+    - libhealpix-cxx-dev
+    - libsharp-dev
+    - libtool
+    - pkgconf
+  tools:
+    python: "3.12"
 
 python:
-   version: 3.7
-   install:
-      - method: pip
-        path: .
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - doc
 
 submodules:
-    include: all
+  include: all

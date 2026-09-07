@@ -1,6 +1,11 @@
 Installation procedure for Healpy
 =================================
 
+(NOTE: if high performance of the installed package is important, e.g. when
+installing in computing centers or for performing benchmarks, please be sure
+to read the `Generating native binaries`_ section below.)
+
+
 Requirements
 ------------
 
@@ -20,17 +25,18 @@ Anaconda with::
     conda config --add channels conda-forge
     conda install healpy
 
-There have also been reports of specific installation issues under Mac OS
-Catalina 10.15.5 with conda install as the solver appears to run without
-finding the required packages. This is a general issue with a number of
-packages, and not limited to ``healpy``. The most straightforward solution
-(after adding conda-forge to the channel list) is for the user to decide which
-packages they wish to install alongside ``healpy`` and then create a new
-environment installing ``healpy`` alongside said packages. For instance if one
-wishes to install ``healpy`` alongside Spyder and My_Package into newly created
-environment env_healpy, the command will be::
+If one first installs ``healpy`` on macOS with ``conda install`` and later
+tries to install additional packages in the same environment, the solver may
+appear unable to find compatible packages. This is a general dependency
+conflict issue across multiple packages and is not limited to ``healpy``.
+The most straightforward solution (after adding conda-forge to the channel
+list) is to decide in advance which packages are needed and create a new
+environment that installs ``healpy`` together with those packages. For
+instance, if one wishes to install ``healpy`` alongside Spyder and
+``my_package`` into a newly created environment ``env_healpy``, the command
+will be::
 
-    conda create --name env_healpy python=3.7 healpy spyder my_package
+    conda create --name env_healpy python=3.10 healpy spyder my_package
 
 Binary installation with Pip (recommended for most other Python users)
 ----------------------------------------------------------------------
@@ -84,7 +90,7 @@ interpreter by running::
 MacPorts users on macOS may install Healpy for the MacPorts-supplied Python
 interpreter by running::
 
-    sudo port install py38-healpy
+    sudo port install py39-healpy
 
 Compilation issues with Mac OS
 ------------------------------
@@ -100,7 +106,7 @@ Installation on Mac OS with MacPorts
 If you are using a Mac and have the `MacPorts <https://www.macports.org>`_
 package manager, it's even easer to install Healpy with::
 
-    sudo port install py36-healpy
+    sudo port install py39-healpy
 
 Installation with a package manager on Debian and Ubuntu
 --------------------------------------------------------
@@ -141,9 +147,8 @@ Building against external Healpix and cfitsio
 ---------------------------------------------
 
 Healpy uses pkg-config to detect the presence of the Healpix and cfitsio
-libraries. pkg-config is available on most systems. If you do not have
-pkg-config installed, then Healpy will download and use (but not install) a
-Python clone called pykg-config.
+libraries. pkg-config is available on most systems; if it is missing, the
+build falls back to pykg-config.
 
 If you want to provide your own external builds of Healpix and cfitsio, then
 download the following packages:
@@ -164,6 +169,26 @@ environment variable settings are necessary, and you do not need to set
 
 Then, unpack each of the above packages and build them with the usual
 ``configure; make; make install`` recipe.
+
+pkg-config visibility in isolated builds
+----------------------------------------
+
+healpy relies on the system ``pkg-config`` results. If ``pkg-config`` cannot
+see build-tree ``.pc`` files (for example, in isolated build environments), the
+fix is to adjust ``PKG_CONFIG_PATH`` so the generated ``.pc`` files are in
+scope. If ``pkg-config`` is missing, the build falls back to ``pykg-config``,
+which aims to be compatible but can diverge from ``pkg-config`` semantics.
+
+Failure scenarios this note does not cover include:
+
+* ``pkg-config`` is missing and ``pykg-config`` is unavailable, or either tool
+  fails for reasons other than "package not found" (syntax errors, incompatible
+  flags).
+* ``.pc`` files depend on ``pkg-config``-specific behaviors (custom variables,
+  ``Requires.private``, system search paths) that alternate parsers such as
+  ``pykg-config`` may not match.
+* ``pkg-config`` resolves to an incompatible prefix or ABI; fix the environment
+  rather than relying on automatic fallbacks.
 
 Installation on Windows through the "Windows Subsystem for Linux"
 -----------------------------------------------------------------
@@ -211,21 +236,39 @@ Developers building from a snapshot of the github repository need:
 * ``libssl-dev`` (Debian) or ``openssl-dev`` (CentOS)
   is required to build ``cfitsio`` from source
 
-* `cython` > 0.16
-
 * run ``git submodule init`` and ``git submodule update`` to get the bundled
   HEALPix sources
 
-the best way to install healpy if you plan to develop is to build the C++
-extensions in place with::
+The best way to install healpy if you plan to develop is to do a
+`development mode (a.k.a. "editable" install) <https://setuptools.pypa.io/en/latest/userguide/development_mode.html>`_
+with pip by adding the ``-e`` flag::
 
-    python setup.py build_ext --inplace
-
-then add the ``healpy`` repository folder to your ``PYTHONPATH`` (e.g. if you
-cloned this repository to ``$REPOS`` such that ``$REPOS/healpy/INSTALL.rst``
-exists, then add ``$REPOS/healpy`` to your ``PYTHONPATH``).
+    pip install -e .
 
 In case of compilation errors, see the note above in the ``pip`` section.
+
+Generating native binaries
+--------------------------
+
+Using pre-compiled wheels is typically the easiest and quickest way
+to install ``healpy`` on a system. However, the performance of the installed
+package may not be optimal, since the wheel has to work on all CPUs of a given
+architecture (e.g. x86_64) and will therefore probably not use all features
+present in your local CPU. A ``healpy`` installation which is custom-tailored
+for a specific target CPU may be two or three times faster for some operations
+(most notably ``alm2map*`` and ``map2alm*`` calls).
+
+To achieve target-specific compilation, ``healpy`` must be installed from source
+and the ``-march=native`` flag has to be passed to the compilers.
+While details may vary slightly depending on the target platform,
+the installation command will have this basic form::
+
+    CC=gcc CXX=g++ CFLAGS="-fPIC -O3 -march=native" CXXFLAGS="-fPIC -O3 -march=native" pip3 install --user --no-binary healpy healpy
+
+If the install process errors mentioning a different version of automake, rerun it with:
+
+    cd cextern/cfitsio
+    autoreconf
 
 Clean
 -----

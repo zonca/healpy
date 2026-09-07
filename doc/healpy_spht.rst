@@ -14,6 +14,7 @@ From map to spherical harmonics
    anafast
    map2alm
    map2alm_spin
+   map2alm_lsq
 
 From spherical harmonics to map
 -------------------------------
@@ -29,20 +30,25 @@ Spherical harmonic transform tools
 ----------------------------------
 .. autosummary::
    :toctree: generated/
-   
+
    smoothing
    smoothalm
+   harmonic_ud_grade
    alm2cl
    synalm
    almxfl
    pixwin
    Alm
+   resize_alm
 
 Other tools
 -----------
 .. autosummary::
    :toctree: generated/
-   
+
    gauss_beam
    beam2bl
    bl2beam
+   blm_gauss
+   effective_resolution_fwhm
+   check_max_nside

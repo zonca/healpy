@@ -5,6 +5,8 @@ Welcome to the healpy documentation
 `Hierarchical Equal Area isoLatitude Pixelization (HEALPix) <https://healpix.jpl.nasa.gov/>`_
 scheme and bundles the `HEALPix` C++ library.
 
+For an introduction to HEALPix and `healpy`, see `Methods for CMB map analysis <https://arxiv.org/html/2410.12951v2>`_.
+
 `HEALPix` was developed to efficiently process Cosmic Microwave Background data from Cosmology
 experiments like BOOMERANG and WMAP but it is now used in other branches of Astrophysics to
 store data from all-sky surveys. The target audience used to be primarily the Cosmology
@@ -50,13 +52,13 @@ or customize their format::
 
 For more details see the `Python documentation <https://docs.python.org/3/library/logging.html>`_.
 
-All the `verbose` keywords (except :py:func:remove_dipole) are now deprecated and
+All the `verbose` keywords (except :py:func:`remove_dipole`) are now deprecated and
 will be removed in the future.
 You can disable deprecation warnings with::
 
     import warnings
-    from astropy.utils.exceptions import AstropyDeprecationWarning
-    warnings.simplefilter('ignore', category=AstropyDeprecationWarning)
+    from healpy.utils.deprecation import HealpyDeprecationWarning
+    warnings.simplefilter('ignore', category=HealpyDeprecationWarning)
 
 Changelog
 ---------
@@ -73,7 +75,7 @@ Citing
 
 3. at the first use of the `HEALPix` acronym, a footnote placed in the main body
    of the paper referring to the `HEALPix` web site, currently
-   http://healpix.sf.net
+   https://healpix.sourceforge.net
 
 Tutorial
 --------
@@ -109,6 +111,8 @@ Reference
    healpy_projector
    healpy_zoomtool
    healpy_line_integral_convolution
+
+   healpy_otherfunc
 
 Indices and tables
 ==================

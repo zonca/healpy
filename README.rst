@@ -11,6 +11,9 @@ Healpy, a python wrapper for healpix
 .. image:: https://github.com/healpy/healpy/actions/workflows/cibuildwheel.yml/badge.svg
    :target: https://github.com/healpy/healpy/actions/workflows/cibuildwheel.yml
 
+.. image:: https://github.com/healpy/healpy/actions/workflows/tests.yml/badge.svg
+   :target: https://github.com/healpy/healpy/actions/workflows/tests.yml
+
 .. image:: https://readthedocs.org/projects/healpy/badge/?version=latest
    :target: https://readthedocs.org/projects/healpy/?badge=latest
    :alt: Documentation Status
@@ -37,6 +40,8 @@ store data from all-sky surveys. The target audience used to be primarily the Co
 scientific community but currently anyone interested in handling pixelated data on the sphere
 is very welcome to propose new features.
 
+For an introduction to HEALPix and `healpy`, see `Methods for CMB map analysis <https://arxiv.org/html/2410.12951v2>`_.
+
 Capabilities
 ------------
 
@@ -58,11 +63,11 @@ https://healpy.readthedocs.io/en/latest/tutorial.html, or execute it on `mybinde
 Requirements
 ------------
 
-* `Python <http://www.python.org>`_ 3.7, 3.8, 3.9, or 3.10
+* `Python <http://www.python.org>`_ 3.10, 3.11, 3.12, 3.13, or 3.14
 
-* `Numpy <http://numpy.scipy.org/>`_ (tested with version >=1.5.0)
+* `Numpy <http://numpy.scipy.org/>`_ (tested with version >=1.19)
 
-* `Matplotlib <http://matplotlib.sourceforge.net/>`_
+* `Matplotlib <https://matplotlib.org/>`_
 
 * Python development package is required for some distribution (e.g.,
   python-dev package for Ubuntu)
@@ -96,7 +101,8 @@ However, if you have them installed already, Healpy should detect and reuse
 them instead of building them from source. To use your own installations of
 `HEALPix` and cfitsio, you will also need:
 
-* `pkg-config <http://pkg-config.freedesktop.org>`_
+* `pkg-config <http://pkg-config.freedesktop.org>`_ (pykg-config fallback if
+  pkg-config is missing)
 
 * `HEALPix
   <http://sourceforge.net/projects/healpix/files/Healpix_3.11/autotools_packages/>`_
@@ -105,7 +111,7 @@ them instead of building them from source. To use your own installations of
 * `cfitsio <http://heasarc.gsfc.nasa.gov/fitsio/>`_
 
 See `INSTALL.rst <https://github.com/healpy/healpy/blob/master/INSTALL.rst>`_
-for further instructions.
+for further instructions, including details on pkg-config visibility.
 
 Known issues
 ------------
@@ -151,9 +157,6 @@ google.
 If you think you found a bug or you have install issues, open an issue on GitHub:
 https://github.com/healpy/healpy/issues
 
-For more general discussion, you can write to the healpy mailing list:
-https://groups.google.com/d/forum/healpy
-
 .. _StackOverflow: http://stackoverflow.com/questions/ask
 
 Contribute
@@ -187,5 +190,3 @@ Acknowledgements
 3. at the first use of the `HEALPix` acronym, a footnote placed in the main body
    of the paper referring to the `HEALPix` web site, currently
    http://healpix.sf.net
-
-4. You can also directly support the maintenance and development of `healpy` via `Github Sponsors <https://github.com/sponsors/zonca>`_
