@@ -74,7 +74,8 @@ def superpixels(
     to the sphere: spatial distances are angular distances between pixel
     centres and the clustering works directly on the HEALPix grid.
     Superpixel segmentation on the sphere was also studied for
-    panoramic images as SphSLIC (Zhao et al. 2018 [2]_).
+    panoramic images as SphSLIC (Zhao et al. 2018 [2]_). This function
+    is based on an implementation by Nina Öhlckers.
 
     Parameters
     ----------
@@ -213,6 +214,17 @@ def superpixels(
     >>> labels = hp.superpixels(m, 48, compactness=0.1)
     >>> labels.shape
     (3072,)
+
+    Masked maps and ``return_centers``:
+
+    >>> m = np.ma.MaskedArray(m, mask=(theta < 0.5))
+    >>> labels, center_pix, center_values = hp.superpixels(
+    ...     m, 12, compactness=0.5, return_centers=True
+    ... )
+    >>> center_values.shape
+    (12, 1)
+    >>> bool(np.all(labels[np.ma.getmaskarray(m)] == -1))
+    True
     """
     if init not in _INIT_STRATEGIES:
         raise ValueError(
