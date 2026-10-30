@@ -38,6 +38,17 @@ __all__ = ["superpixels"]
 _INIT_STRATEGIES = ("hierarchical", "greedy", "farthest")
 
 
+def _as_int(value, name):
+    """Convert to int, raising ValueError for invalid or non-integral input."""
+    try:
+        result = int(value)
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError(f"{name} must be an integer, got {value!r}") from None
+    if result != value:
+        raise ValueError(f"{name} must be an integer, got {value!r}")
+    return result
+
+
 def superpixels(
     m,
     n_segments,
@@ -127,7 +138,8 @@ def superpixels(
         If the map size is not a valid HEALPix pixel number, if
         `n_segments` is not an integer in ``[1, number of valid
         pixels]``, if `compactness` is not a finite positive number, if
-        `max_iter` is smaller than 1, or if `init` is unknown.
+        `max_iter` is not an integer of at least 1, or if `init` is
+        unknown.
 
     Notes
     -----
@@ -202,7 +214,12 @@ def superpixels(
             f"Unknown init strategy {init!r}, expected one of {_INIT_STRATEGIES}"
         )
 
-    compactness = float(compactness)
+    try:
+        compactness = float(compactness)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"compactness must be a finite positive number, got {compactness!r}"
+        ) from None
     if not np.isfinite(compactness) or compactness <= 0:
         raise ValueError(
             f"compactness must be a finite positive number, got {compactness!r}"
@@ -220,9 +237,7 @@ def superpixels(
         raise ValueError(f"Map has {npix} pixels, which is not a valid HEALPix size")
     nside = pixelfunc.npix2nside(npix)
 
-    k = int(n_segments)
-    if k != n_segments:
-        raise ValueError(f"n_segments must be an integer, got {n_segments!r}")
+    k = _as_int(n_segments, "n_segments")
     n_valid = int(valid.sum())
     if not 1 <= k <= n_valid:
         raise ValueError(
@@ -230,6 +245,7 @@ def superpixels(
             f"({n_valid}), got {n_segments}"
         )
 
+    max_iter = _as_int(max_iter, "max_iter")
     if max_iter < 1:
         raise ValueError(f"max_iter must be at least 1, got {max_iter}")
 

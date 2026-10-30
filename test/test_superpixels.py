@@ -162,21 +162,39 @@ def test_k_equals_n_valid():
     assert np.all(counts == 1)
 
 
-@pytest.mark.parametrize("compactness", [0.0, -2.0, np.nan, np.inf])
-def test_compactness_validation(analytic_map, compactness):
-    with pytest.raises(ValueError, match="compactness"):
-        superpixels(analytic_map, 16, compactness=compactness)
-
-
-@pytest.mark.parametrize("n_segments", [0, -5, 48.5, hp.nside2npix(NSIDE) + 1])
+@pytest.mark.parametrize(
+    "n_segments", [0, -5, 48.5, np.inf, np.nan, None, 1j, hp.nside2npix(NSIDE) + 1]
+)
 def test_n_segments_validation(analytic_map, n_segments):
     with pytest.raises(ValueError, match="n_segments"):
         superpixels(analytic_map, n_segments)
 
 
-def test_max_iter_validation(analytic_map):
+def test_n_segments_array_rejected(analytic_map):
+    with pytest.raises(ValueError, match="n_segments"):
+        superpixels(analytic_map, np.array([16]))
+
+
+def test_n_segments_integral_float_accepted(analytic_map):
+    labels = superpixels(analytic_map, 16.0)
+    assert np.all(labels >= 0)
+
+
+@pytest.mark.parametrize("max_iter", [0, -1, 2.5, np.inf, np.nan])
+def test_max_iter_validation(analytic_map, max_iter):
     with pytest.raises(ValueError, match="max_iter"):
-        superpixels(analytic_map, 16, max_iter=0)
+        superpixels(analytic_map, 16, max_iter=max_iter)
+
+
+def test_max_iter_integral_float_accepted(analytic_map):
+    labels = superpixels(analytic_map, 16, max_iter=10.0)
+    assert np.all(labels >= 0)
+
+
+@pytest.mark.parametrize("compactness", [0.0, -2.0, np.nan, np.inf, None, "small"])
+def test_compactness_validation(analytic_map, compactness):
+    with pytest.raises(ValueError, match="compactness"):
+        superpixels(analytic_map, 16, compactness=compactness)
 
 
 def test_max_iter_one_runs(analytic_map):
