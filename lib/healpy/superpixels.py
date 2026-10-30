@@ -81,7 +81,8 @@ def superpixels(
         much larger values. Default: 1.0
     nest : bool, optional
         If True, assume NESTED pixel ordering, otherwise RING ordering.
-        The returned partition is identical for the two orderings.
+        For the same random draws (a fixed `seed` with ``init='greedy'``),
+        the returned partition is identical for the two orderings.
         Default: False
     init : {'hierarchical', 'greedy', 'farthest'}, optional
         Strategy used to place the initial cluster centres:
@@ -111,7 +112,7 @@ def superpixels(
     labels : ndarray of int32, shape (npix,)
         Superpixel index of every pixel, in ``[0, n_segments)``.
         Invalid pixels are labelled ``-1``. In rare cases a cluster can
-        end up without pixels, leaving unused indices in between.
+        end up without pixels, leaving unused indices.
     center_pix : ndarray of int, shape (n_segments,)
         Pixel index of each cluster centre. Only returned if
         `return_centers` is True.
@@ -139,9 +140,10 @@ def superpixels(
     where :math:`d_f` is the Euclidean distance in the normalised
     feature space, :math:`c` is `compactness`, :math:`d_s` is the
     angular distance between pixel and centre in radians, and
-    :math:`S = 2 \\sqrt{f / k}` is the nominal cluster spacing for
+    :math:`S = 2 \\sqrt{f / k}` is the nominal cluster scale for
     :math:`k` superpixels covering a valid fraction :math:`f` of the
-    sphere, so masked maps keep the same superpixel density. Only
+    sphere (the radius of a disc with the area of one superpixel), so
+    masked maps keep the same superpixel density. Only
     pixels within an angular radius :math:`2S` of a centre are compared
     in the iteration (this local search is what makes SLIC fast); valid
     pixels not reached by any search disc are assigned to the globally
@@ -151,10 +153,10 @@ def superpixels(
     centres do not start on edges; centres that end up duplicated by
     this nudge are re-placed deterministically.
 
-    The result is exactly reproducible: the partition is bit-identical
-    for RING and NESTED input for any `init`, and deterministic for
-    ``init='hierarchical'`` and ``init='farthest'``, or for a fixed
-    `seed` with ``init='greedy'``.
+    The result is exactly reproducible: ``init='hierarchical'`` and
+    ``init='farthest'`` are fully deterministic, and with a fixed `seed`
+    so is ``init='greedy'``. Given the same random draws, the partition
+    is bit-identical for RING and NESTED input for any `init`.
 
     Two caveats are inherent to SLIC rather than to this
     implementation:
