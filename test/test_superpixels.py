@@ -171,8 +171,11 @@ def test_n_segments_validation(analytic_map, n_segments):
 
 
 def test_n_segments_array_rejected(analytic_map):
+    # size-1 arrays only fail int() on recent numpy, so reject explicitly
     with pytest.raises(ValueError, match="n_segments"):
         superpixels(analytic_map, np.array([16]))
+    with pytest.raises(ValueError, match="n_segments"):
+        superpixels(analytic_map, np.array([16, 17]))
 
 
 def test_n_segments_integral_float_accepted(analytic_map):
@@ -195,6 +198,11 @@ def test_max_iter_integral_float_accepted(analytic_map):
 def test_compactness_validation(analytic_map, compactness):
     with pytest.raises(ValueError, match="compactness"):
         superpixels(analytic_map, 16, compactness=compactness)
+
+
+def test_compactness_array_rejected(analytic_map):
+    with pytest.raises(ValueError, match="compactness"):
+        superpixels(analytic_map, 16, compactness=np.array([0.5]))
 
 
 def test_max_iter_one_runs(analytic_map):

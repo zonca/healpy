@@ -40,6 +40,11 @@ _INIT_STRATEGIES = ("hierarchical", "greedy", "farthest")
 
 def _as_int(value, name):
     """Convert to int, raising ValueError for invalid or non-integral input."""
+    if np.ndim(value) > 0:
+        # int() of a size-1 array is only an error on recent numpy, and
+        # comparing the result against the array is ambiguous: reject
+        # arrays of any shape explicitly
+        raise ValueError(f"{name} must be an integer, got {value!r}")
     try:
         result = int(value)
     except (TypeError, ValueError, OverflowError):
@@ -214,6 +219,10 @@ def superpixels(
             f"Unknown init strategy {init!r}, expected one of {_INIT_STRATEGIES}"
         )
 
+    if np.ndim(compactness) > 0:
+        raise ValueError(
+            f"compactness must be a finite positive number, got {compactness!r}"
+        )
     try:
         compactness = float(compactness)
     except (TypeError, ValueError):
