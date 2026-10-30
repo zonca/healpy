@@ -309,6 +309,29 @@ def test_duplicate_centers_dedup():
     assert fixed[0] == adjusted[0]
 
 
+def test_duplicate_centers_dedup_ordering():
+    """Dedup re-places duplicates at the same physical pixels in RING and NESTED."""
+    nside = 64
+    npix = hp.nside2npix(nside)
+    valid = np.ones(npix, dtype=bool)
+    allpix = np.arange(npix)
+    xyz_ring = np.asarray(hp.pix2vec(nside, allpix, nest=False)).T
+    xyz_nest = xyz_ring[hp.nest2ring(nside, allpix)]
+
+    # duplicated centre at ring pixel 100, expressed in each ordering
+    dup_ring = np.array([100, 100])
+    dup_nest = hp.ring2nest(nside, dup_ring)
+    fixed_ring = _dedup_centers(
+        _canonical_valid_pix(valid, nside, False), xyz_ring, nside,
+        dup_ring, nest=False,
+    )
+    fixed_nest = _dedup_centers(
+        _canonical_valid_pix(valid, nside, True), xyz_nest, nside,
+        dup_nest, nest=True,
+    )
+    assert np.array_equal(fixed_nest, hp.ring2nest(nside, fixed_ring))
+
+
 @pytest.mark.parametrize("nside", [1, 2])
 @pytest.mark.parametrize("init", ["hierarchical", "farthest", "greedy"])
 def test_tiny_maps(nside, init):

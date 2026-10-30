@@ -54,9 +54,11 @@ def superpixels(
     group neighbouring pixels with similar values, so that downstream
     tasks can work with a few hundred coherent regions instead of
     millions of pixels. This function adapts the Simple Linear
-    Iterative Clustering (SLIC) algorithm of Achanta et al. (2012) to
-    the sphere: spatial distances are angular distances between pixel
+    Iterative Clustering (SLIC) algorithm of Achanta et al. (2012) [1]_
+    to the sphere: spatial distances are angular distances between pixel
     centres and the clustering works directly on the HEALPix grid.
+    Superpixel segmentation on the sphere was also studied for
+    panoramic images as SphSLIC (Zhao et al. 2018 [2]_).
 
     Parameters
     ----------
@@ -72,10 +74,11 @@ def superpixels(
         Scale of the feature distance relative to the spatial distance.
         Features are normalised internally, so ``compactness`` is
         dimensionless: values close to 0 let superpixels follow the map
-        values closely, values around 1 give roughly round superpixels
-        that still snap to strong edges, and much larger values give an
-        almost purely spatial partition (a fancier ``ud_grade``).
-        Default: 1.0
+        values closely, intermediate values give roughly round
+        superpixels that snap to strong edges, and values of order 1
+        and above give compact, regular superpixels, saturating to an
+        almost purely spatial partition (a fancier ``ud_grade``) for
+        much larger values. Default: 1.0
     nest : bool, optional
         If True, assume NESTED pixel ordering, otherwise RING ordering.
         The returned partition is identical for the two orderings.
@@ -87,7 +90,7 @@ def superpixels(
           centres of the coarser HEALPix level whose pixel count is
           closest to `n_segments`, subsampled or supplemented to
           exactly `n_segments`.
-        * ``'greedy'``: greedy k-means++ seeding on angular distance
+        * ``'greedy'``: greedy k-means++ [3]_ seeding on angular distance
           (random, controlled by `seed`).
         * ``'farthest'``: deterministic farthest-point sampling,
           starting from the lowest valid RING pixel.
@@ -114,7 +117,8 @@ def superpixels(
         `return_centers` is True.
     center_values : ndarray, shape (n_segments, nfeatures)
         Mean feature values of each cluster, in the units of the input
-        map. Only returned if `return_centers` is True.
+        map. A cluster that ends up without pixels keeps its previous
+        centre values. Only returned if `return_centers` is True.
 
     Raises
     ------
@@ -170,9 +174,10 @@ def superpixels(
 
     References
     ----------
-    .. [1] R. Achanta, A. Shaji, K. Smith, A. Lucchi, P. Fua and
-       S. Süsstrunk, "SLIC Superpixels Compared to State-of-the-Art
-       Superpixel Methods", IEEE TPAMI 34(11), 2274-2282 (2012).
+    .. [1] R. Achanta, A. Shaji, K. Smith, A. Lucchi, P. Fua
+       and S. Süsstrunk, "SLIC Superpixels Compared to
+       State-of-the-Art Superpixel Methods", IEEE TPAMI 34(11),
+       2274-2282 (2012).
     .. [2] Q. Zhao, D. Yang, H. Lu, T. Huang and Z. Wang, "Spherical
        Superpixel Segmentation", IEEE Trans. Multimedia 20(6),
        1406-1417 (2018).
@@ -469,10 +474,14 @@ def _init_centers(m, valid, xyz, nside, k, init, nest, rng):
 
 def _assign_nearest_chunked(
     m, xyz, pix, center_pix, center_values, compactness, S,
-    distances, labels, chunk=20000,
+    distances, labels,
 ):
     """Assign each pixel in ``pix`` to the centre minimising D, with no
-    radius cut, in chunks to bound memory."""
+    radius cut, in chunks sized to bound memory for large k."""
+    k = center_pix.size
+    nfeatures = m.shape[0]
+    # bound the (chunk, k, nfeatures) temporary to roughly 20M elements
+    chunk = max(1, int(2e7 / max(k * nfeatures, 1)))
     center_vec = xyz[center_pix]
     for start in range(0, pix.size, chunk):
         p = pix[start : start + chunk]
